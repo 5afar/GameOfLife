@@ -1,12 +1,19 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>
+#include <unistd.h>
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
-const int CELL_SIZE = 10;
-const int GRID_WIDTH = SCREEN_WIDTH / CELL_SIZE;
-const int GRID_HEIGHT = SCREEN_HEIGHT / CELL_SIZE;
+const int DEFAULT_SCREEN_WIDTH = 800;
+const int DEFAULT_SCREEN_HEIGHT = 600;
+const int DEFAULT_CELL_SIZE = 10;
+const int DEFAULT_SPEED = 100; // in milliseconds
+
+int SCREEN_WIDTH = DEFAULT_SCREEN_WIDTH;
+int SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
+int CELL_SIZE = DEFAULT_CELL_SIZE;
+int GRID_WIDTH;
+int GRID_HEIGHT;
+int speed = DEFAULT_SPEED;
 
 void renderGrid(SDL_Renderer* renderer, const std::vector<std::vector<bool>>& grid) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -70,7 +77,35 @@ void toggleCell(std::vector<std::vector<bool>>& grid, int x, int y) {
     }
 }
 
+void parseArguments(int argc, char* argv[]) {
+    int opt;
+    while ((opt = getopt(argc, argv, "w:h:c:s:")) != -1) {
+        switch (opt) {
+            case 'w':
+                SCREEN_WIDTH = atoi(optarg);
+                break;
+            case 'h':
+                SCREEN_HEIGHT = atoi(optarg);
+                break;
+            case 'c':
+                CELL_SIZE = atoi(optarg);
+                break;
+            case 's':
+                speed = atoi(optarg);
+                break;
+            default:
+                std::cerr << "Usage: " << argv[0] << " [-w screen_width] [-h screen_height] [-c cell_size] [-s speed_ms]" << std::endl;
+                exit(EXIT_FAILURE);
+        }
+    }
+
+    GRID_WIDTH = SCREEN_WIDTH / CELL_SIZE;
+    GRID_HEIGHT = SCREEN_HEIGHT / CELL_SIZE;
+}
+
 int main(int argc, char* argv[]) {
+    parseArguments(argc, argv);
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
         return 1;
@@ -117,7 +152,7 @@ int main(int argc, char* argv[]) {
         }
 
         renderGrid(renderer, grid);
-        SDL_Delay(100);
+        SDL_Delay(speed);
     }
 
     SDL_DestroyRenderer(renderer);
