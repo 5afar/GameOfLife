@@ -1,8 +1,6 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>
-#include <cstdlib>
-#include <ctime>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -10,17 +8,8 @@ const int CELL_SIZE = 10;
 const int GRID_WIDTH = SCREEN_WIDTH / CELL_SIZE;
 const int GRID_HEIGHT = SCREEN_HEIGHT / CELL_SIZE;
 
-void initGrid(std::vector<std::vector<bool>>& grid) {
-    srand(time(0));
-    for (int i = 0; i < GRID_HEIGHT; ++i) {
-        for (int j = 0; j < GRID_WIDTH; ++j) {
-            grid[i][j] = rand() % 2;
-        }
-    }
-}
-
 void renderGrid(SDL_Renderer* renderer, const std::vector<std::vector<bool>>& grid) {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
@@ -31,6 +20,14 @@ void renderGrid(SDL_Renderer* renderer, const std::vector<std::vector<bool>>& gr
                 SDL_RenderFillRect(renderer, &cell);
             }
         }
+    }
+
+    SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+    for (int i = 0; i <= GRID_HEIGHT; ++i) {
+        SDL_RenderDrawLine(renderer, 0, i * CELL_SIZE, SCREEN_WIDTH, i * CELL_SIZE);
+    }
+    for (int j = 0; j <= GRID_WIDTH; ++j) {
+        SDL_RenderDrawLine(renderer, j * CELL_SIZE, 0, j * CELL_SIZE, SCREEN_HEIGHT);
     }
 
     SDL_RenderPresent(renderer);
@@ -65,6 +62,14 @@ void updateGrid(std::vector<std::vector<bool>>& grid) {
     grid = newGrid;
 }
 
+void toggleCell(std::vector<std::vector<bool>>& grid, int x, int y) {
+    int gridX = x / CELL_SIZE;
+    int gridY = y / CELL_SIZE;
+    if (gridX >= 0 && gridX < GRID_WIDTH && gridY >= 0 && gridY < GRID_HEIGHT) {
+        grid[gridY][gridX] = !grid[gridY][gridX];
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
@@ -87,19 +92,30 @@ int main(int argc, char* argv[]) {
     }
 
     std::vector<std::vector<bool>> grid(GRID_HEIGHT, std::vector<bool>(GRID_WIDTH, false));
-    initGrid(grid);
 
     bool quit = false;
+    bool paused = true;
     SDL_Event e;
 
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 quit = true;
+            } else if (e.type == SDL_MOUSEBUTTONDOWN) {
+                int x, y;
+                SDL_GetMouseState(&x, &y);
+                toggleCell(grid, x, y);
+            } else if (e.type == SDL_KEYDOWN) {
+                if (e.key.keysym.sym == SDLK_SPACE) {
+                    paused = !paused;
+                }
             }
         }
 
-        updateGrid(grid);
+        if (!paused) {
+            updateGrid(grid);
+        }
+
         renderGrid(renderer, grid);
         SDL_Delay(100);
     }
